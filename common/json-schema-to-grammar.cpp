@@ -15,7 +15,20 @@
 
 using json = common_json;
 
+// The grammar parser refuses a {m,n} repetition once m or n crosses this bound
+// (MAX_REPETITION_THRESHOLD in src/llama-grammar.cpp), and a single such rule makes the
+// whole grammar unparseable, so one tool schema with e.g. "maxLength": 524288 or a
+// "minLength" past the cap rejects every request that carries it. A bound that large
+// can't be honored exactly by the sampler anyway, so degrade it here instead of failing:
+// drop a max above the cap (unbounded), clamp a min above the cap down to the cap.
+static const int GRAMMAR_MAX_REPETITION = 2000;
+
 static std::string build_repetition(const std::string & item_rule, int min_items, int max_items, const std::string & separator_rule = "") {
+    if (max_items != std::numeric_limits<int>::max() && max_items > GRAMMAR_MAX_REPETITION) {
+        max_items = std::numeric_limits<int>::max();
+    }
+    min_items = std::min(min_items, GRAMMAR_MAX_REPETITION);
+
     auto has_max = max_items != std::numeric_limits<int>::max();
 
     if (max_items == 0) {
