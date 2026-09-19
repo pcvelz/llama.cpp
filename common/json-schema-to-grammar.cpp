@@ -16,6 +16,9 @@
 using json = common_json;
 
 static std::string build_repetition(const std::string & item_rule, int min_items, int max_items, const std::string & separator_rule = "") {
+    // grammar parser rejects a min repetition above 2000 (MAX_REPETITION_THRESHOLD)
+    min_items = std::min(min_items, 2000);
+
     auto has_max = max_items != std::numeric_limits<int>::max();
 
     if (max_items == 0) {
